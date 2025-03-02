@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Trading Bot</title>
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-size: cover;
+            background-position: center;
+            transition: background 0.5s ease-in-out;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .container:hover {
+            transform: scale(1.02);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            outline: none;
+            transition: border 0.3s ease-in-out;
+        }
+
+        input:focus {
+            border-color: #0056b3;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #chart {
+            margin-top: 30px;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        /* Hide Buy & Sell buttons initially */
+        #buy-btn, #sell-btn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Trading Bot</h1>
+        <input type="text" id="symbol" placeholder="Enter Stock Symbol">
+        <button onclick="setStock()">Set Stock</button>
+        <button onclick="fetchStock()">Get Stock Data</button>
+
+        <h2 class="output" id="prediction"></h2>
+        <h3 class="output" id="recent-price"></h3>
+        <h3 class="output" id="strategy-comparison"></h3>
+        <h3 class="output" id="trade-status"></h3>
+
+        <!-- Buy and Sell buttons (Initially Hidden) -->
+        <button id="buy-btn" onclick="executeTrade('BUY')">Buy</button>
+        <button id="sell-btn" onclick="executeTrade('SELL')">Sell</button>
+
+        <div id="chart"></div>
+    </div>
+
+    <script>
+        function setStock() {
+            let symbol = document.getElementById('symbol').value.toUpperCase();
+            if (!symbol) {
+                alert("Please enter a stock symbol first.");
+                return;
+            }
+
+            fetch(`/set_stock/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error("Error setting stock:", error);
+                alert("Failed to set stock.");
+            });
+        }
+
+        function fetchStock() {
+            let symbol = document.getElementById('symbol').value.toUpperCase();
+            
+            fetch(`/stock/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                let dates = data.dates;
+                let prices = data.prices;
+                let lastPrice = data.last_price;
+
+                document.getElementById("recent-price").innerText = `Recent Price: $${lastPrice}`;
+                
+                fetch(`/trade`)
+                .then(response => response.json())
+                .then(tradeData => {
+                    document.getElementById("prediction").innerText = `Trading Bot Decision: ${tradeData.decision}`;
+                    document.getElementById("strategy-comparison").innerText = `SMA Strategy Suggests: ${tradeData.sma_decision}`;
+                    document.getElementById("trade-status").innerText = `Trade Status: ${tradeData.trade_status}`;
+
+                    // Show Buy & Sell buttons after trade status updates
+                    document.getElementById("buy-btn").style.display = "inline-block";
+                    document.getElementById("sell-btn").style.display = "inline-block";
+                });
+
+                let trace = {
+                    x: dates,
+                    y: prices,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: symbol,
+                    line: { color: "#007BFF", width: 2 }
+                };
+
+                let layout = {
+                    title: `Stock Prices for ${symbol}`,
+                    xaxis: { title: 'Date' },
+                    yaxis: { title: 'Price (USD)' },
+                    plot_bgcolor: "rgba(0, 0, 0, 0)",
+                    paper_bgcolor: "rgba(0, 0, 0, 0)"
+                };
+
+                Plotly.newPlot('chart', [trace], layout);
+            });
+        }
+
+        function executeTrade(action) {
+            fetch("/trade", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_decision: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById("trade-status").innerText = `Trade Status: ${data.trade_status}`;
+                    alert(`Trade executed: ${action}`);
+                }
+            })
+            .catch(error => {
+                console.error("Trade execution error:", error);
+                alert("Failed to execute trade.");
+            });
+        }
+    </script>
+</body>
+</html>
