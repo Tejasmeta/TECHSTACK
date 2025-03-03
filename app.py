@@ -5,16 +5,17 @@ import gym
 import numpy as np
 from stable_baselines3 import DQN
 import alpaca_trade_api as tradeapi  
-from time import time  # Import time module for delay handling
+from time import time  
+import os  # Import os for environment variables
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 
 default_stock = "TSLA"
 
-# Alpaca API Keys
-ALPACA_API_KEY = "api"
-ALPACA_SECRET_KEY = "key"
+# Alpaca API Keys from Environment Variables
+ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
+ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
 alpaca = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_version="v2")
@@ -24,7 +25,7 @@ try:
 except:
     model = None  
 
-last_buy_time = 0  # Global variable to track last buy order time
+last_buy_time = 0  
 
 @app.route('/')
 def index():
@@ -153,4 +154,5 @@ class StockTradingEnv(gym.Env):
         return np.array([self.data[self.current_step]])
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  
+    app.run(host="0.0.0.0", port=port)
