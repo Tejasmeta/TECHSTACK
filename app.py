@@ -14,8 +14,8 @@ CORS(app)
 default_stock = "TSLA"
 
 # Alpaca API Keys from Environment Variables
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
+ALPACA_API_KEY = os.getenv("api")
+ALPACA_SECRET_KEY = os.getenv("key")
 ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
 alpaca = tradeapi.REST(ALPACA_API_KEY, ALPACA_SECRET_KEY, ALPACA_BASE_URL, api_version="v2")
